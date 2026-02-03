@@ -1,0 +1,4 @@
+node_modules/
+agentpwned.db
+agentpwned.db-shm
+agentpwned.db-wal

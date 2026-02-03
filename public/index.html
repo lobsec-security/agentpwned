@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentPwned — AI Agent Compromise Database</title>
+  <meta name="description" content="Check if your AI agent has been compromised. The first open database of AI agent security incidents.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-card-hover: #1a1a28;
+      --border: #1e1e2e;
+      --border-glow: #ff2e4433;
+      --text: #e0e0e8;
+      --text-dim: #7a7a8e;
+      --text-muted: #4a4a5e;
+      --red: #ff2e44;
+      --red-dim: #ff2e4488;
+      --red-glow: #ff2e4422;
+      --green: #00ff88;
+      --green-dim: #00ff8866;
+      --yellow: #ffc107;
+      --orange: #ff7b00;
+      --blue: #4e8cff;
+      --purple: #a855f7;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-sans: 'Inter', -apple-system, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+    }
+    .header-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--red);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--text-dim); font-weight: 400; }
+    .header-links { display: flex; gap: 20px; }
+    .header-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      transition: color 0.2s;
+    }
+    .header-links a:hover { color: var(--red); }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 80px 0 40px;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border: 1px solid var(--red-dim);
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--red);
+      background: var(--red-glow);
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+    .hero h1 {
+      font-family: var(--font-mono);
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--red) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      color: var(--text-dim);
+      font-size: 18px;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    /* ── Search ── */
+    .search-container {
+      max-width: 640px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 18px 24px 18px 52px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 30px var(--red-glow), 0 0 60px rgba(255, 46, 68, 0.08);
+    }
+    .search-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 20px;
+      pointer-events: none;
+    }
+    .search-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 10px 24px;
+      background: var(--red);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .search-btn:hover { background: #e0263b; }
+    .search-btn:active { transform: translateY(-50%) scale(0.97); }
+    .search-hint {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Result ── */
+    .result-container {
+      max-width: 640px;
+      margin: 24px auto;
+      display: none;
+    }
+    .result-container.visible { display: block; }
+    .result-pwned {
+      background: linear-gradient(135deg, #1a0a0e, #12121a);
+      border: 1px solid var(--red-dim);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .result-safe {
+      background: linear-gradient(135deg, #0a1a10, #12121a);
+      border: 1px solid var(--green-dim);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .result-icon { font-size: 32px; }
+    .result-title { font-family: var(--font-mono); font-size: 20px; font-weight: 700; }
+    .result-pwned .result-title { color: var(--red); }
+    .result-safe .result-title { color: var(--green); }
+    .result-subtitle { color: var(--text-dim); font-size: 14px; }
+
+    .report-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .report-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .report-card-type {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .severity-critical { background: #ff2e4422; color: var(--red); border: 1px solid var(--red-dim); }
+    .severity-high { background: #ff7b0022; color: var(--orange); border: 1px solid #ff7b0044; }
+    .severity-medium { background: #ffc10722; color: var(--yellow); border: 1px solid #ffc10744; }
+    .severity-low { background: #4e8cff22; color: var(--blue); border: 1px solid #4e8cff44; }
+    .report-card-date { color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); }
+    .report-card p { color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+    .report-card-meta {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    .verified-badge { color: var(--green); }
+
+    /* ── Stats ── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      padding: 48px 0;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+    .stat-card:hover {
+      border-color: var(--red-dim);
+      transform: translateY(-2px);
+    }
+    .stat-number {
+      font-family: var(--font-mono);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--red);
+      display: block;
+    }
+    .stat-label {
+      color: var(--text-dim);
+      font-size: 13px;
+      margin-top: 4px;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Feed ── */
+    .feed-section {
+      padding: 32px 0 80px;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .section-title::before {
+      content: '> ';
+      color: var(--red);
+    }
+
+    .feed-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 12px;
+      transition: border-color 0.3s, background 0.3s;
+      cursor: default;
+    }
+    .feed-item:hover {
+      border-color: var(--border-glow);
+      background: var(--bg-card-hover);
+    }
+    .feed-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .feed-item-name {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .feed-item-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .tag-attack { background: #a855f722; color: var(--purple); border: 1px solid #a855f744; }
+    .tag-platform { background: #4e8cff22; color: var(--blue); border: 1px solid #4e8cff44; }
+    .feed-item-desc {
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .feed-item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* ── API Docs ── */
+    .api-section { padding: 32px 0; }
+    .api-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .api-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      transition: border-color 0.3s;
+    }
+    .api-card:hover { border-color: var(--red-dim); }
+    .api-method {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .method-get { background: #00ff8822; color: var(--green); }
+    .method-post { background: #ff7b0022; color: var(--orange); }
+    .api-path {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .api-desc { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+    footer a { color: var(--red); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Pulse animation for live indicator ── */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+      margin-right: 6px;
+    }
+
+    /* ── Loading ── */
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--text-muted);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .hero { padding: 48px 0 24px; }
+      .search-btn { padding: 10px 16px; font-size: 12px; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .header-links { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-inner">
+      <a href="/" class="logo">agent<span>pwned</span></a>
+      <div class="header-links">
+        <a href="#feed">Feed</a>
+        <a href="#api">API</a>
+        <a href="https://lobsec.org" target="_blank">LobSec</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="hero-badge"><span class="live-dot"></span>LIVE DATABASE</div>
+        <h1>Has your agent<br>been pwned?</h1>
+        <p>The first open database of AI agent compromises. Search for your agent, check its history, and report new incidents. Because autonomous agents need a threat feed too.</p>
+
+        <div class="search-container">
+          <span class="search-icon">⌕</span>
+          <input type="text" class="search-input" id="searchInput" placeholder="Enter agent name..." autocomplete="off" spellcheck="false">
+          <button class="search-btn" id="searchBtn" onclick="checkAgent()">CHECK</button>
+        </div>
+        <p class="search-hint">Try: DefiGuardBot, AutoDevAgent, MCPBridge</p>
+      </div>
+    </section>
+
+    <div class="result-container" id="resultContainer">
+      <div class="container" id="resultContent"></div>
+    </div>
+
+    <section class="container">
+      <div class="stats-bar" id="statsBar">
+        <div class="stat-card"><span class="stat-number" id="statTotal">—</span><div class="stat-label">Total Reports</div></div>
+        <div class="stat-card"><span class="stat-number" id="statAgents">—</span><div class="stat-label">Agents Compromised</div></div>
+        <div class="stat-card"><span class="stat-number" id="statRecent">—</span><div class="stat-label">Last 30 Days</div></div>
+        <div class="stat-card"><span class="stat-number" id="statTopAttack">—</span><div class="stat-label">Top Attack Vector</div></div>
+      </div>
+    </section>
+
+    <section class="feed-section" id="feed">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Recent Compromises</h2>
+        </div>
+        <div id="feedList"></div>
+      </div>
+    </section>
+
+    <section class="api-section" id="api">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">API Reference</h2>
+        </div>
+        <div class="api-grid">
+          <div class="api-card">
+            <span class="api-method method-get">GET</span>
+            <div class="api-path">/api/check/:agent_name</div>
+            <div class="api-desc">Check if an agent has been compromised. Returns all known incidents for the agent.</div>
+          </div>
+          <div class="api-card">
+            <span class="api-method method-get">GET</span>
+            <div class="api-path">/api/search?q=query</div>
+            <div class="api-desc">Search agents by partial name match. Returns matching agents with report counts.</div>
+          </div>
+          <div class="api-card">
+            <span class="api-method method-get">GET</span>
+            <div class="api-path">/api/feed?page=1&limit=20</div>
+            <div class="api-desc">Get the latest compromise reports with pagination. Default 20 per page.</div>
+          </div>
+          <div class="api-card">
+            <span class="api-method method-get">GET</span>
+            <div class="api-path">/api/stats</div>
+            <div class="api-desc">Aggregate statistics: totals, breakdowns by attack type, platform, severity.</div>
+          </div>
+          <div class="api-card">
+            <span class="api-method method-post">POST</span>
+            <div class="api-path">/api/report</div>
+            <div class="api-desc">Submit a new compromise report. Requires: agent_name, platform, attack_type, description.</div>
+          </div>
+          <div class="api-card">
+            <span class="api-method method-get">GET</span>
+            <div class="api-path">/api/types</div>
+            <div class="api-desc">List all valid attack types and severity levels accepted by the API.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>agentpwned v1.0.0 — built by <a href="https://lobsec.org">LobSec</a> — the AI agent security layer</p>
+      <p style="margin-top:6px; font-size: 11px;">Report compromises. Protect the agent economy. 🔴</p>
+    </div>
+  </footer>
+
+  <script>
+    // ── Search ──
+    const searchInput = document.getElementById('searchInput');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultContent = document.getElementById('resultContent');
+
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkAgent();
+    });
+
+    async function checkAgent() {
+      const name = searchInput.value.trim();
+      if (!name || name.length < 2) return;
+
+      resultContainer.className = 'result-container visible';
+      resultContent.innerHTML = '<div style="text-align:center;padding:20px"><div class="loading"></div></div>';
+
+      try {
+        const res = await fetch(`/api/check/${encodeURIComponent(name)}`);
+        const data = await res.json();
+
+        if (data.pwned) {
+          resultContent.innerHTML = `
+            <div class="result-pwned">
+              <div class="result-header">
+                <span class="result-icon">🔴</span>
+                <div>
+                  <div class="result-title">PWNED! ${data.report_count} incident${data.report_count > 1 ? 's' : ''} found</div>
+                  <div class="result-subtitle">${escapeHtml(data.agent_name)} has known compromises</div>
+                </div>
+              </div>
+              ${data.reports.map(r => reportCard(r)).join('')}
+            </div>`;
+        } else {
+          resultContent.innerHTML = `
+            <div class="result-safe">
+              <div class="result-header">
+                <span class="result-icon">🟢</span>
+                <div>
+                  <div class="result-title">No compromises found</div>
+                  <div class="result-subtitle">"${escapeHtml(data.agent_name)}" is not in our database — yet</div>
+                </div>
+              </div>
+              <p style="color:var(--text-dim);font-size:13px;margin-top:12px">This doesn't guarantee safety. New incidents are reported daily. Check back often or <a href="#api" style="color:var(--green)">integrate our API</a>.</p>
+            </div>`;
+        }
+      } catch (err) {
+        resultContent.innerHTML = `<div class="result-pwned"><p style="color:var(--red)">Error checking agent. Try again.</p></div>`;
+      }
+    }
+
+    function reportCard(r) {
+      return `
+        <div class="report-card">
+          <div class="report-card-header">
+            <span class="report-card-type severity-${r.severity}">${r.severity.toUpperCase()}: ${formatAttackType(r.attack_type)}</span>
+            <span class="report-card-date">${formatDate(r.created_at)}</span>
+          </div>
+          <p>${escapeHtml(r.description)}</p>
+          <div class="report-card-meta">
+            <span>📍 ${escapeHtml(r.platform)}</span>
+            ${r.verified ? '<span class="verified-badge">✓ Verified</span>' : '<span>⏳ Unverified</span>'}
+            ${r.evidence_url ? `<a href="${escapeHtml(r.evidence_url)}" target="_blank" rel="noopener" style="color:var(--blue)">Evidence ↗</a>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // ── Stats ──
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        document.getElementById('statTotal').textContent = data.total_reports;
+        document.getElementById('statAgents').textContent = data.unique_agents;
+        document.getElementById('statRecent').textContent = data.last_30_days;
+        const top = data.by_attack_type[0];
+        document.getElementById('statTopAttack').textContent = top ? formatAttackType(top.attack_type) : '—';
+      } catch (e) { console.error('Stats error:', e); }
+    }
+
+    // ── Feed ──
+    async function loadFeed() {
+      const feedList = document.getElementById('feedList');
+      try {
+        const res = await fetch('/api/feed?limit=10');
+        const data = await res.json();
+        feedList.innerHTML = data.reports.map(r => `
+          <div class="feed-item">
+            <div class="feed-item-header">
+              <span class="feed-item-name">${escapeHtml(r.agent_name)}</span>
+              <div class="feed-item-tags">
+                <span class="tag tag-attack">${formatAttackType(r.attack_type)}</span>
+                <span class="tag tag-platform">${escapeHtml(r.platform)}</span>
+                <span class="tag severity-${r.severity}">${r.severity}</span>
+              </div>
+            </div>
+            <div class="feed-item-desc">${escapeHtml(r.description)}</div>
+            <div class="feed-item-footer">
+              <span>${formatDate(r.created_at)}${r.verified ? ' · <span class="verified-badge">✓ verified</span>' : ''}</span>
+              <span>reported by ${escapeHtml(r.reporter)}</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        feedList.innerHTML = '<p style="color:var(--text-muted)">Failed to load feed</p>';
+      }
+    }
+
+    // ── Helpers ──
+    function escapeHtml(str) {
+      if (!str) return '';
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function formatAttackType(type) {
+      return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'Z');
+      const now = new Date();
+      const diff = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+      if (diff === 0) return 'Today';
+      if (diff === 1) return 'Yesterday';
+      if (diff < 30) return `${diff}d ago`;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // ── Init ──
+    loadStats();
+    loadFeed();
+  </script>
+</body>
+</html>
