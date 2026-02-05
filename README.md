@@ -1,5 +1,12 @@
 # 🔴 AgentPwned
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/lobsec-security/agentpwned/releases)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/lobsec-security/agentpwned/actions)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.x-lightgrey.svg)](https://expressjs.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-3-blue.svg)](https://sqlite.org/)
+
 **The first AI agent compromise database.** "Have I Been Pwned" but for AI agents.
 
 Check if your agent has been compromised. Report new incidents. Protect the agent economy.
